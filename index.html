@@ -11,7 +11,7 @@
 }
 
 .layer-outer-container {
-  opacity: 0.3;
+  opacity: 0.5;
   position: absolute;
   left: 0px;
   top: 0px;
@@ -28,6 +28,7 @@
 
 <div id="map"></div>
 
+<script src="stats.js"></script>
 
 <script src="d3.v3.min.js"></script>
 <script src="d3.geo.projection.min.js"></script>
@@ -35,6 +36,17 @@
 <script src="d3.quadtiles.js"></script>
 <script src="d3.geo.raster.js"></script>
 <script>
+
+var stats = new Stats();
+stats.setMode(1); // 0: fps, 1: ms
+
+// Align top-left
+stats.domElement.style.position = 'absolute';
+stats.domElement.style.left = '0px';
+stats.domElement.style.top = '0px';
+
+document.body.appendChild( stats.domElement );
+
 
 var ratio = 1,
     width = 960 * ratio,
@@ -76,12 +88,18 @@ var layer = d3.select("#map")
       .scale(projection.scale() / ratio)
       .scaleExtent([1e2, 1e8])
       .on("zoom", function() {
+        
+        stats.end();
+
         var t = d3.event.translate,
             s = d3.event.scale;
         projection.translate([t[0] * ratio, t[1] * ratio]).scale(s * ratio);
         layer.call(raster);
         pointsG.select("path")
             .attr("d", path);
+
+        stats.begin();
+
       }))
   .append("div")
     .attr("class", "layer-outer-container")
@@ -93,6 +111,7 @@ var layer = d3.select("#map")
 
 d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
   
+  data = data.filter(function(d, i) { return i % 10 == 0 })
   data = openPaths2GeoJson(data);
 
   console.log(data);
