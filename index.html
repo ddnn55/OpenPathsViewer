@@ -85,7 +85,7 @@ var openPaths2GeoJson = function(op) {
       "type": "Feature",
       "geometry": {"type": "Point", "coordinates": [+d.lon, +d.lat]}
     }
-  }).concat(lines);
+  });
 
 }
 
@@ -102,7 +102,10 @@ d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
   console.log(features);
 
   pointsG.append("path")
-    .datum(features)
+    .datum({
+              "type": "FeatureCollection",
+              "features": features
+            })
     .attr("d", path);
 
   var layer = d3.select("#map")
