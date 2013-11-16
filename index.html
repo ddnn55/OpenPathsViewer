@@ -15,31 +15,8 @@
 }
 </style>
 
-<p class="breadcrumbs"><a href="http://www.jasondavies.com/">Jason Davies</a> → <a href="../">Maps</a>
-<h1>Reprojected Raster Tiles</h1>
 <div id="map"></div>
-<p class="caption">Zoomable raster world map on an Albers equal-area projection.
 
-<div class="wrapper">
-  <p>A combination of <a href="http://bl.ocks.org/mbostock/4329423">Mike Bostock’s raster reprojection</a>, <a href="../tile/">automatic projection tiles</a> and a <a href="http://a.tiles.mapbox.com/v3/mapbox.natural-earth-2/page.html">MapBox terrain example</a>.
-  <h2>Any Tiles, Any Projection</h2>
-  <p>This approach will work for <i>any</i> multi-resolution Mercator-based tileset that is subdivided recursively in the form of a quadtree, combined with <i>any</i> inverse projection, i.e. a mapping from 2D to spherical coordinates.
-  <p>This means that you can take beautiful raster tiles, say from <a href="http://www.mapbox.com">MapBox</a> or <a href="http://maps.stamen.com/">Stamen</a>, and reproject using your <a href="https://github.com/mbostock/d3/wiki/Geo-Projections">projection of choice</a>:
-  <div class="thumb">
-    <a href="satellite/"><img src="satellite/thumb.png"></a>
-    <a href="satellite/">Satellite Raster</a>
-  </div>
-  <div class="thumb">
-    <a href="mollweide/"><img src="mollweide/thumb.png"></a>
-    <a href="mollweide/">Mollweide Watercolour</a>
-  </div>
-  <div class="thumb">
-    <a href="goode/"><img src="goode/thumb.png"></a>
-    <a href="goode/">Interrupted Goode Raster</a>
-  </div>
-  <div class="clear"></div>
-  <p>Thanks to <a href="http://bost.ocks.org/mike">Mike Bostock</a> and <a href="http://somebits.com">Nelson Minar</a> for their comments and encouragement!
-</div>
 
 <script src="d3.v3.min.js"></script>
 <script src="d3.geo.projection.min.js"></script>
