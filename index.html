@@ -67,6 +67,8 @@ svg.brush {
 <script src="d3.geo.raster.js"></script>
 <script>
 
+var MAX_POINTS = 1000;
+
 var stats = new Stats();
 stats.setMode(1); // 0: fps, 1: ms
 
@@ -95,6 +97,9 @@ var raster = d3.geo.raster(projection)
 
 var openPaths2GeoJson = function(op) {
 
+  // 2012-01-03 21:07:13
+  var parseDate = d3.time.format("%Y-%m-%d %H:%M:%S").parse;
+
   var lines = op.slice(1).map(function(d, i) {
     
     var p1 = op[i],  // from
@@ -113,7 +118,10 @@ var openPaths2GeoJson = function(op) {
   return op.map(function(d, i) {
     return {
       "type": "Feature",
-      "geometry": {"type": "Point", "coordinates": [+d.lon, +d.lat]}
+      "geometry": {"type": "Point", "coordinates": [+d.lon, +d.lat, +d.alt]},
+      "properties": {
+        "date": parseDate(d.date)
+      }
     }
   });
 
@@ -123,11 +131,42 @@ var path = d3.geo.path().projection(projection);
 
 var pointsG;
 
+var s, timeDomain;
+var updatePoints = function() {
+
+  var timeWindowFeatures = features.filter(function(d, i) {
+    return d.properties.date >= timeDomain[0] &&
+           d.properties.date <= timeDomain[1];
+  })
+
+  // magic numbers :( instead should detect/target frame rate if possible?
+  var percentPointsVisible = 0.1 + 0.9 * s / 600000;
+  var countPointsVisible = percentPointsVisible * features.length;
+  var visiblePointPeriod = Math.ceil(features.length / countPointsVisible);
+
+  var sampledFeatures = timeWindowFeatures.filter(function(d, i) {
+    return timeWindowFeatures.length < MAX_POINTS ||
+           i % visiblePointPeriod == 0;
+  })
+
+  pointsG.select("path")
+    .datum({
+      "type": "FeatureCollection",
+      "features": sampledFeatures
+    })
+      .attr("d", path);
+}
 
 d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
   
   //data = data.filter(function(d, i) { return i % 1500 == 0 })
   features = openPaths2GeoJson(data);
+
+  s = 1, timeDomain = d3.extent(features, function(d) {
+    return d.properties.date;
+  })
+
+  createBrush(features);
 
   var layer = d3.select("#map")
       .style("width", width / ratio + "px")
@@ -140,30 +179,15 @@ d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
           
           stats.end();
   
-          var t = d3.event.translate,
-              s = d3.event.scale;
+          var t = d3.event.translate;
+
+          s = d3.event.scale;
   
  
           projection.translate([t[0] * ratio, t[1] * ratio]).scale(s * ratio);
           layer.call(raster);
 
-          // magic numbers :( instead should detect/target frame rate if possible?
-          var percentPointsVisible = 0.1 + 0.9 * s / 600000;
-          var countPointsVisible = percentPointsVisible * features.length;
-          var visiblePointPeriod = Math.ceil(features.length / countPointsVisible);
-
-          var sampledFeatures = features.filter(function(d, i) {
-            return i % visiblePointPeriod == 0;
-          })
-
-          console.log(visiblePointPeriod, sampledFeatures.length);
-
-          pointsG.select("path")
-            .datum({
-              "type": "FeatureCollection",
-              "features": sampledFeatures
-            })
-              .attr("d", path);
+          updatePoints({s:s});
   
           stats.begin();
   
@@ -197,15 +221,13 @@ d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
 
 
 
-(function() {
+var createBrush = function(data) {
 
   var margin = {top: 0, right: 0, bottom: 0, left: 0},
       margin2 = {top: 0, right: 0, bottom: 20, left: 0},
       width = 960 - margin.left - margin.right,
       height = 100 - margin.top - margin.bottom,
       height2 = 100 - margin2.top - margin2.bottom;
-  
-  var parseDate = d3.time.format("%b %Y").parse;
   
   var x = d3.time.scale().range([0, width]),
       x2 = d3.time.scale().range([0, width]),
@@ -218,17 +240,17 @@ d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
       .x(x2)
       .on("brush", brushed);
   
-  var area = d3.svg.area()
+  /*var area = d3.svg.area()
       .interpolate("monotone")
-      .x(function(d) { return x(d.date); })
+      .x(function(d) { return x(d.properties.date); })
       .y0(height)
-      .y1(function(d) { return y(d.price); });
+      .y1(function(d) { return y(d.geometry.coordinates[0][2]); });*/
   
   var area2 = d3.svg.area()
       .interpolate("monotone")
-      .x(function(d) { return x2(d.date); })
+      .x(function(d) { return x2(d.properties.date); })
       .y0(height2)
-      .y1(function(d) { return y2(d.price); });
+      .y1(function(d, i) { return y2(/*d.geometry.coordinates[0][2]*/i); });
   
   var svg = d3.select("body").append("svg")
       .attr("class", "brush")
@@ -244,15 +266,20 @@ d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
   var context = svg.append("g")
       .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
   
-  d3.csv("sp500.csv", function(error, data) {
-  
+  //d3.csv("sp500.csv", function(error, data) {
+
+    /*  
     data.forEach(function(d) {
       d.date = parseDate(d.date);
       d.price = +d.price;
     });
+    */
   
-    x.domain(d3.extent(data.map(function(d) { return d.date; })));
-    y.domain([0, d3.max(data.map(function(d) { return d.price; }))]);
+    x.domain(d3.extent(data.map(function(d) { return d.properties.date; })));
+    y.domain([0, d3.max(data.map(function(d, i) {
+      //return d.geometry.coordinates[0][2];
+      return i;
+    }))]);
     x2.domain(x.domain());
     y2.domain(y.domain());
 
@@ -272,15 +299,16 @@ d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
       .selectAll("rect")
         .attr("y", -6)
         .attr("height", height2 + 7);
-  });
+  //});
   
   function brushed() {
-    //x.domain(brush.empty() ? x2.domain() : brush.extent());
+    timeDomain = brush.empty() ? x2.domain() : brush.extent();
+    updatePoints();
     //focus.select("path").attr("d", area);
     //focus.select(".x.axis").call(xAxis);
   }
 
-})();
+}
 
 
 
