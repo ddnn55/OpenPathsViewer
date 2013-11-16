@@ -10,8 +10,18 @@
   overflow: hidden;
 }
 
+.layer-outer-container {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+}
+
 .tile {
   position: absolute;
+}
+
+.points {
+  fill: red;
 }
 </style>
 
@@ -40,6 +50,23 @@ var projection = d3.geo.albers()
 var raster = d3.geo.raster(projection)
     .url("http://api.tiles.mapbox.com/v3/examples.map-zr0njcqy/{z}/{x}/{y}.png32");
 
+var openPaths2GeoJson = function(op) {
+  return {
+    "type": "FeatureCollection",
+    "features": op.map(function(d, i) {
+      return {
+        "type": "Feature",
+        "geometry": {"type": "Point", "coordinates": [+d.lon, +d.lat]}
+      }
+    })
+  }
+}
+
+var point = d3.geo.circle();
+
+var pointsG = d3.select("#map").append("svg").append("g")
+      .attr("class", "points");
+
 var layer = d3.select("#map")
     .style("width", width / ratio + "px")
     .style("height", height / ratio + "px")
@@ -52,11 +79,29 @@ var layer = d3.select("#map")
             s = d3.event.scale;
         projection.translate([t[0] * ratio, t[1] * ratio]).scale(s * ratio);
         layer.call(raster);
+        //pointsG.call(point);
       }))
   .append("div")
+    .attr("class", "layer-outer-container")
     .style(prefix + "transform-origin", "0 0 0")
   .append("div")
+    .attr("class", "layer-inner-container")
     .style(prefix + "transform-origin", "0 0 0")
     .call(raster);
+
+d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
+  
+  data = openPaths2GeoJson(data);
+
+  console.log(data);
+
+  /*pointsG.selectAll("circle")
+      .data(data)
+    .enter().append("circle")
+      .attr("transform", function(d) {
+        return "translate(" + projection([d.lat, d.lon]).join(",") + ")"
+      })*/
+
+})
 
 </script>
