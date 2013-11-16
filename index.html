@@ -10,8 +10,7 @@
   overflow: hidden;
 }
 
-.layer-outer-container {
-  opacity: 0.5;
+#map svg {
   position: absolute;
   left: 0px;
   top: 0px;
@@ -22,7 +21,7 @@
 }
 
 .points {
-  fill: red;
+  fill: crimson;
 }
 
 
@@ -30,11 +29,11 @@
 
 
 
-svg {
+svg.brush {
   font: 10px sans-serif;
 }
 
-path {
+.brush path {
   fill: steelblue;
 }
 
@@ -122,22 +121,13 @@ var openPaths2GeoJson = function(op) {
 
 var path = d3.geo.path().projection(projection);
 
-var pointsG = d3.select("#map").append("svg").append("g")
-      .attr("class", "points");
+var pointsG;
+
 
 d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
   
   //data = data.filter(function(d, i) { return i % 1500 == 0 })
   features = openPaths2GeoJson(data);
-
-  console.log(features);
-
-  pointsG.append("path")
-    .datum({
-              "type": "FeatureCollection",
-              "features": features
-            })
-    .attr("d", path);
 
   var layer = d3.select("#map")
       .style("width", width / ratio + "px")
@@ -186,6 +176,17 @@ d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
       .style(prefix + "transform-origin", "0 0 0")
       .call(raster);
 
+
+  pointsG = d3.select("#map").append("svg").append("g")
+      .attr("class", "points");
+
+  pointsG.append("path")
+    .datum({
+              "type": "FeatureCollection",
+              "features": features
+            })
+    .attr("d", path);
+
 });
 
 
@@ -232,6 +233,7 @@ d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
       .y1(function(d) { return y2(d.price); });
   
   var svg = d3.select("body").append("svg")
+      .attr("class", "brush")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom);
   
