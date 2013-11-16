@@ -64,15 +64,29 @@ var raster = d3.geo.raster(projection)
     .url("http://api.tiles.mapbox.com/v3/examples.map-zr0njcqy/{z}/{x}/{y}.png32");
 
 var openPaths2GeoJson = function(op) {
-  return {
-    "type": "FeatureCollection",
-    "features": op.map(function(d, i) {
-      return {
-        "type": "Feature",
-        "geometry": {"type": "Point", "coordinates": [+d.lon, +d.lat]}
-      }
-    })
-  }
+
+  var lines = op.slice(1).map(function(d, i) {
+    
+    var p1 = op[i],  // from
+        p2 = op[i+1] // to
+
+    return {
+      "type": "LineString",
+      "coordinates": [
+        [+p1.lon, +p1.lat],
+        [+p2.lon, +p2.lat]
+      ]
+    }
+
+  });
+
+  return op.map(function(d, i) {
+    return {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [+d.lon, +d.lat]}
+    }
+  }).concat(lines);
+
 }
 
 var path = d3.geo.path().projection(projection);
@@ -82,13 +96,13 @@ var pointsG = d3.select("#map").append("svg").append("g")
 
 d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
   
-  //data = data.filter(function(d, i) { return i % 10 == 0 })
-  data = openPaths2GeoJson(data);
+  //data = data.filter(function(d, i) { return i % 1500 == 0 })
+  features = openPaths2GeoJson(data);
 
-  console.log(data);
+  console.log(features);
 
   pointsG.append("path")
-    .datum(data)
+    .datum(features)
     .attr("d", path);
 
   var layer = d3.select("#map")
@@ -111,10 +125,10 @@ d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
 
           // magic numbers :( instead should detect/target frame rate if possible?
           var percentPointsVisible = 0.1 + 0.9 * s / 600000;
-          var countPointsVisible = percentPointsVisible * data.features.length;
-          var visiblePointPeriod = Math.ceil(data.features.length / countPointsVisible);
+          var countPointsVisible = percentPointsVisible * features.length;
+          var visiblePointPeriod = Math.ceil(features.length / countPointsVisible);
 
-          var sampledFeatures = data.features.filter(function(d, i) {
+          var sampledFeatures = features.filter(function(d, i) {
             return i % visiblePointPeriod == 0;
           })
 
