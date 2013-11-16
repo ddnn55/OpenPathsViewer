@@ -39,9 +39,6 @@ var projection = d3.geo.albers()
 
 var raster = d3.geo.raster(projection)
     .url("http://api.tiles.mapbox.com/v3/examples.map-zr0njcqy/{z}/{x}/{y}.png32");
-    //13/1310/3166.png32
-    
-    //.url("//{subdomain}.tiles.mapbox.com/v3/mapbox.natural-earth-2/{z}/{x}/{y}.png");
 
 var layer = d3.select("#map")
     .style("width", width / ratio + "px")
