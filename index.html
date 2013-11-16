@@ -20,8 +20,9 @@
   position: absolute;
 }
 
-.points {
+.points path {
   fill: crimson;
+  opacity: 0.3;
 }
 
 
@@ -149,12 +150,10 @@ var updatePoints = function() {
            i % visiblePointPeriod == 0;
   })
 
-  pointsG.select("path")
-    .datum({
-      "type": "FeatureCollection",
-      "features": sampledFeatures
-    })
-      .attr("d", path);
+  var paths = pointsG.selectAll("path").data(sampledFeatures);
+  paths.enter().append("path");
+  paths.attr("d", path)
+  paths.exit().remove();
 }
 
 d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
@@ -204,12 +203,9 @@ d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
   pointsG = d3.select("#map").append("svg").append("g")
       .attr("class", "points");
 
-  pointsG.append("path")
-    .datum({
-              "type": "FeatureCollection",
-              "features": features
-            })
-    .attr("d", path);
+  pointsG.selectAll("path")
+    .data(features).enter().append("path")
+      .attr("d", path);
 
 });
 
