@@ -80,38 +80,9 @@ var path = d3.geo.path().projection(projection);
 var pointsG = d3.select("#map").append("svg").append("g")
       .attr("class", "points");
 
-var layer = d3.select("#map")
-    .style("width", width / ratio + "px")
-    .style("height", height / ratio + "px")
-    .call(d3.behavior.zoom()
-      .translate([.5 * width / ratio, .5 * height / ratio])
-      .scale(projection.scale() / ratio)
-      .scaleExtent([1e2, 1e8])
-      .on("zoom", function() {
-        
-        stats.end();
-
-        var t = d3.event.translate,
-            s = d3.event.scale;
-        projection.translate([t[0] * ratio, t[1] * ratio]).scale(s * ratio);
-        layer.call(raster);
-        pointsG.select("path")
-            .attr("d", path);
-
-        stats.begin();
-
-      }))
-  .append("div")
-    .attr("class", "layer-outer-container")
-    .style(prefix + "transform-origin", "0 0 0")
-  .append("div")
-    .attr("class", "layer-inner-container")
-    .style(prefix + "transform-origin", "0 0 0")
-    .call(raster);
-
 d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
   
-  data = data.filter(function(d, i) { return i % 10 == 0 })
+  //data = data.filter(function(d, i) { return i % 10 == 0 })
   data = openPaths2GeoJson(data);
 
   console.log(data);
@@ -120,13 +91,53 @@ d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
     .datum(data)
     .attr("d", path);
 
-  /*pointsG.selectAll("circle")
-      .data(data)
-    .enter().append("circle")
-      .attr("transform", function(d) {
-        return "translate(" + projection([d.lat, d.lon]).join(",") + ")"
-      })*/
+  var layer = d3.select("#map")
+      .style("width", width / ratio + "px")
+      .style("height", height / ratio + "px")
+      .call(d3.behavior.zoom()
+        .translate([.5 * width / ratio, .5 * height / ratio])
+        .scale(projection.scale() / ratio)
+        .scaleExtent([1e2, 1e8])
+        .on("zoom", function() {
+          
+          stats.end();
+  
+          var t = d3.event.translate,
+              s = d3.event.scale;
+  
+ 
+          projection.translate([t[0] * ratio, t[1] * ratio]).scale(s * ratio);
+          layer.call(raster);
 
-})
+          // magic numbers :( instead should detect/target frame rate if possible?
+          var percentPointsVisible = 0.1 + 0.9 * s / 600000;
+          var countPointsVisible = percentPointsVisible * data.features.length;
+          var visiblePointPeriod = Math.ceil(data.features.length / countPointsVisible);
+
+          var sampledFeatures = data.features.filter(function(d, i) {
+            return i % visiblePointPeriod == 0;
+          })
+
+          console.log(visiblePointPeriod, sampledFeatures.length);
+
+          pointsG.select("path")
+            .datum({
+              "type": "FeatureCollection",
+              "features": sampledFeatures
+            })
+              .attr("d", path);
+  
+          stats.begin();
+  
+        }))
+    .append("div")
+      .attr("class", "layer-outer-container")
+      .style(prefix + "transform-origin", "0 0 0")
+    .append("div")
+      .attr("class", "layer-inner-container")
+      .style(prefix + "transform-origin", "0 0 0")
+      .call(raster);
+
+});
 
 </script>
