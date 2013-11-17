@@ -60,11 +60,14 @@ svg.brush {
 
 
 <style>
-#holder { border: 10px dashed #ccc; width: 300px; height: 300px; margin: 20px auto;}
+#holder { border: 10px dashed #ccc; width: 300px; height: 300px; margin: 20px auto;
+padding: 50px;}
 #holder.hover { border: 10px dashed #333; }
 </style>
 
-<div id="holder"></div> 
+<div id="holder">
+  Drop your <a href="http://www.openpaths.cc">OpenPaths.cc</a> CSV here!
+</div> 
 
 
 <div id="map"></div>
@@ -199,7 +202,7 @@ var loadOpenPathsCSV = function(str) {
         .scaleExtent([1e2, 1e8])
         .on("zoom", function() {
           
-          stats.end();
+          //stats.end();
   
           var t = d3.event.translate;
 
@@ -211,7 +214,7 @@ var loadOpenPathsCSV = function(str) {
 
           updatePoints({s:s});
   
-          stats.begin();
+          //stats.begin();
   
         }))
     .append("div")
@@ -329,6 +332,7 @@ holder.ondrop = function (e) {
   var file = e.dataTransfer.files[0],
       reader = new FileReader();
   reader.onload = function (event) {
+    d3.select(holder).remove();
     loadOpenPathsCSV(event.target.result);
   };
   console.log(file);
