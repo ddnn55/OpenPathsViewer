@@ -83,7 +83,7 @@ holder.ondrop = function (e) {
     holder.style.background = 'url(' + event.target.result + ') no-repeat center';
   };
   console.log(file);
-  loadOpenPathsCSV(reader.readAsText(file).result);
+  reader.readAsText(file);
 
   return false;
 };
@@ -200,9 +200,7 @@ var updatePoints = function() {
   paths.exit().remove();
 }
 
-var loadOpenPathsCSV = function(str) {
-  var data = d3.csv.parse(str);
-//d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
+d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
   
   //data = data.filter(function(d, i) { return i % 1500 == 0 })
   features = openPaths2GeoJson(data);
