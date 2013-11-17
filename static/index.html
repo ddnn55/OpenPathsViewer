@@ -63,31 +63,8 @@ svg.brush {
 #holder { border: 10px dashed #ccc; width: 300px; height: 300px; margin: 20px auto;}
 #holder.hover { border: 10px dashed #333; }
 </style>
-<article>
-  <div id="holder"></div> 
-</article>
-<script>
-var holder = document.getElementById('holder'),
-    state = document.getElementById('status');
- 
-holder.ondragover = function () { this.className = 'hover'; return false; };
-holder.ondragend = function () { this.className = ''; return false; };
-holder.ondrop = function (e) {
-  this.className = '';
-  e.preventDefault();
 
-  var file = e.dataTransfer.files[0],
-      reader = new FileReader();
-  reader.onload = function (event) {
-    console.log(event.target);
-    holder.style.background = 'url(' + event.target.result + ') no-repeat center';
-  };
-  console.log(file);
-  reader.readAsText(file);
-
-  return false;
-};
-</script>
+<div id="holder"></div> 
 
 
 <div id="map"></div>
@@ -103,7 +80,7 @@ holder.ondrop = function (e) {
 
 var MAX_POINTS = 2000;
 
-var stats = new Stats();
+/*var stats = new Stats();
 stats.setMode(1); // 0: fps, 1: ms
 
 // Align top-left
@@ -111,7 +88,7 @@ stats.domElement.style.position = 'absolute';
 stats.domElement.style.left = '0px';
 stats.domElement.style.top = '0px';
 
-document.body.appendChild( stats.domElement );
+document.body.appendChild( stats.domElement );*/
 
 
 var ratio = 1,
@@ -200,7 +177,9 @@ var updatePoints = function() {
   paths.exit().remove();
 }
 
-d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
+var loadOpenPathsCSV = function(str) {
+  var data = d3.csv.parse(str);
+//d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
   
   //data = data.filter(function(d, i) { return i % 1500 == 0 })
   features = openPaths2GeoJson(data);
@@ -251,7 +230,7 @@ d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
     .data(features.points).enter().append("path")
       .attr("d", path);
 
-});
+}
 
 
 
@@ -338,7 +317,25 @@ var createBrush = function(data) {
 
 
 
+var holder = document.getElementById('holder'),
+    state = document.getElementById('status');
+ 
+holder.ondragover = function () { this.className = 'hover'; return false; };
+holder.ondragend = function () { this.className = ''; return false; };
+holder.ondrop = function (e) {
+  this.className = '';
+  e.preventDefault();
 
+  var file = e.dataTransfer.files[0],
+      reader = new FileReader();
+  reader.onload = function (event) {
+    loadOpenPathsCSV(event.target.result);
+  };
+  console.log(file);
+  reader.readAsText(file);
+
+  return false;
+};
 
 
 
