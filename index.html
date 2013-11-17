@@ -68,7 +68,7 @@ svg.brush {
 <script src="d3.geo.raster.js"></script>
 <script>
 
-var MAX_POINTS = 1000;
+var MAX_POINTS = 2000;
 
 var stats = new Stats();
 stats.setMode(1); // 0: fps, 1: ms
@@ -101,22 +101,28 @@ var openPaths2GeoJson = function(op) {
   // 2012-01-03 21:07:13
   var parseDate = d3.time.format("%Y-%m-%d %H:%M:%S").parse;
 
-  var lines = op.slice(1).map(function(d, i) {
+  var legs = op.slice(1).map(function(d, i) {
     
     var p1 = op[i],  // from
         p2 = op[i+1] // to
 
     return {
-      "type": "LineString",
-      "coordinates": [
-        [+p1.lon, +p1.lat],
-        [+p2.lon, +p2.lat]
-      ]
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [+p1.lon, +p1.lat, +p1.alt],
+          [+p2.lon, +p2.lat, +p2.alt]
+        ]
+      },
+      "properties": {
+        "date": parseDate(d.date)
+      }
     }
 
   });
 
-  return op.map(function(d, i) {
+  var points = op.map(function(d, i) {
     return {
       "type": "Feature",
       "geometry": {"type": "Point", "coordinates": [+d.lon, +d.lat, +d.alt]},
@@ -126,24 +132,29 @@ var openPaths2GeoJson = function(op) {
     }
   });
 
+  return {
+    legs: legs,
+    points: points
+  }
+
 }
 
 var path = d3.geo.path().projection(projection);
 
 var pointsG;
 
-var s, timeDomain;
+var s, timeDomain, features;
 var updatePoints = function() {
 
-  var timeWindowFeatures = features.filter(function(d, i) {
+  var timeWindowFeatures = features.points.filter(function(d, i) {
     return d.properties.date >= timeDomain[0] &&
            d.properties.date <= timeDomain[1];
   })
 
   // magic numbers :( instead should detect/target frame rate if possible?
   var percentPointsVisible = 0.1 + 0.9 * s / 600000;
-  var countPointsVisible = percentPointsVisible * features.length;
-  var visiblePointPeriod = Math.ceil(features.length / countPointsVisible);
+  var countPointsVisible = percentPointsVisible * features.points.length;
+  var visiblePointPeriod = Math.ceil(features.points.length / countPointsVisible);
 
   var sampledFeatures = timeWindowFeatures.filter(function(d, i) {
     return timeWindowFeatures.length < MAX_POINTS ||
@@ -161,11 +172,11 @@ d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
   //data = data.filter(function(d, i) { return i % 1500 == 0 })
   features = openPaths2GeoJson(data);
 
-  s = 1, timeDomain = d3.extent(features, function(d) {
+  s = 1, timeDomain = d3.extent(features.points, function(d) {
     return d.properties.date;
   })
 
-  createBrush(features);
+  createBrush(features.points);
 
   var layer = d3.select("#map")
       .style("width", width / ratio + "px")
@@ -204,7 +215,7 @@ d3.csv("openpaths_davidstolarsky.csv", function(err, data) {
       .attr("class", "points");
 
   pointsG.selectAll("path")
-    .data(features).enter().append("path")
+    .data(features.points).enter().append("path")
       .attr("d", path);
 
 });
@@ -236,12 +247,6 @@ var createBrush = function(data) {
       .x(x2)
       .on("brush", brushed);
   
-  /*var area = d3.svg.area()
-      .interpolate("monotone")
-      .x(function(d) { return x(d.properties.date); })
-      .y0(height)
-      .y1(function(d) { return y(d.geometry.coordinates[0][2]); });*/
-  
   var area2 = d3.svg.area()
       .interpolate("monotone")
       .x(function(d) { return x2(d.properties.date); })
@@ -262,40 +267,31 @@ var createBrush = function(data) {
   var context = svg.append("g")
       .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
   
-  //d3.csv("sp500.csv", function(error, data) {
-
-    /*  
-    data.forEach(function(d) {
-      d.date = parseDate(d.date);
-      d.price = +d.price;
-    });
-    */
   
-    x.domain(d3.extent(data.map(function(d) { return d.properties.date; })));
-    y.domain([0, d3.max(data.map(function(d, i) {
-      //return d.geometry.coordinates[0][2];
-      return i;
-    }))]);
-    x2.domain(x.domain());
-    y2.domain(y.domain());
+  x.domain(d3.extent(data.map(function(d) { return d.properties.date; })));
+  y.domain([0, d3.max(data.map(function(d, i) {
+    //return d.geometry.coordinates[0][2];
+    return i;
+  }))]);
+  x2.domain(x.domain());
+  y2.domain(y.domain());
 
   
-    context.append("path")
-        .datum(data)
-        .attr("d", area2);
+  context.append("path")
+      .datum(data)
+      .attr("d", area2);
   
-    context.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height2 + ")")
-        .call(xAxis2);
+  context.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height2 + ")")
+      .call(xAxis2);
   
-    context.append("g")
-        .attr("class", "x brush")
-        .call(brush)
-      .selectAll("rect")
-        .attr("y", -6)
-        .attr("height", height2 + 7);
-  //});
+  context.append("g")
+      .attr("class", "x brush")
+      .call(brush)
+    .selectAll("rect")
+      .attr("y", -6)
+      .attr("height", height2 + 7);
   
   function brushed() {
     timeDomain = brush.empty() ? x2.domain() : brush.extent();
